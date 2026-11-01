@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f2ee">
+<title>K-SEEK 문서 검색</title>
+<style>
+:root{--bg:#f4f2ee;--card:#fffdf9;--ink:#1d1f22;--mute:#666b72;--line:#e2ddd4;--acc:#0f6b5e;--acc-ink:#fff;--acc2:#e4f1ed;--warn:#b4541b;--warn2:#fbeee4;--mark:#ffe7a0;--shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.04)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121416;--card:#1b1e21;--ink:#ecebe7;--mute:#9aa0a6;--line:#2c3034;--acc:#4fc1aa;--acc-ink:#0b1a17;--acc2:#16312c;--warn:#f0a06c;--warn2:#3a2418;--mark:#5d4c12;--shadow:none}}
+:root[data-theme="dark"]{--bg:#121416;--card:#1b1e21;--ink:#ecebe7;--mute:#9aa0a6;--line:#2c3034;--acc:#4fc1aa;--acc-ink:#0b1a17;--acc2:#16312c;--warn:#f0a06c;--warn2:#3a2418;--mark:#5d4c12;--shadow:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font:16px/1.55 "SamsungOne","One UI Sans","Pretendard","Noto Sans KR",system-ui,-apple-system,sans-serif;-webkit-text-size-adjust:100%}
+.app{max-width:430px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 96px)}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0 14px}
+.brand{font-weight:800;letter-spacing:.04em;font-size:20px}
+.brand small{display:block;font-weight:500;letter-spacing:0;color:var(--mute);font-size:16px}
+.pill{font-size:16px;padding:4px 10px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--mute);white-space:nowrap;max-width:52%;overflow:hidden;text-overflow:ellipsis}
+.pill.ok{color:var(--acc);border-color:var(--acc)}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 12px;box-shadow:var(--shadow)}
+.card h2{font-size:17px;margin:0 0 6px}
+.card p{margin:4px 0 10px;color:var(--mute)}
+textarea,input[type=text],select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px}
+textarea{min-height:92px;resize:vertical}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+label.lab{display:block;font-size:16px;color:var(--mute);margin:10px 0 4px}
+button{font:inherit;font-size:16px;border:0;border-radius:12px;padding:12px 14px;background:var(--acc);color:var(--acc-ink);font-weight:700;cursor:pointer;min-height:48px}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-weight:600}
+button.warn{background:transparent;color:var(--warn);border:1px solid var(--warn);font-weight:600}
+button:disabled{opacity:.45}
+.wide{width:100%}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0}
+.chip{font-size:16px;padding:6px 12px;border-radius:99px;background:var(--acc2);color:var(--acc);border:0;min-height:0;font-weight:600}
+.qinfo{font-size:16px;color:var(--mute);margin:8px 2px 12px}
+.qinfo b{color:var(--ink)}
+.res{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 10px;box-shadow:var(--shadow)}
+.rhead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.rank{font-variant-numeric:tabular-nums;font-weight:800;color:var(--mute);width:28px}
+.bar{flex:1;height:6px;border-radius:9px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:9px}
+.num{font-variant-numeric:tabular-nums;font-weight:700;width:36px;text-align:right}
+.sent{margin:4px 0 8px;font-size:16px}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+.meta{font-size:16px;color:var(--mute);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.badge{font-size:16px;padding:1px 8px;border-radius:6px;background:var(--acc2);color:var(--acc);font-weight:600}
+.badge.d{background:var(--warn2);color:var(--warn)}
+details summary{cursor:pointer;color:var(--acc);font-size:16px;margin-top:6px}
+details p{color:var(--mute);margin:6px 0 0;font-size:16px}
+.actions{position:sticky;bottom:calc(env(safe-area-inset-bottom) + 80px);display:flex;gap:8px;padding:8px 0;background:linear-gradient(transparent,var(--bg) 30%)}
+.actions button{flex:1}
+.empty{text-align:center;color:var(--mute);padding:28px 8px}
+.dock{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);display:flex;justify-content:center;z-index:20}
+.dock .in{display:flex;max-width:430px;width:100%}
+.dock button{flex:1;background:transparent;color:var(--mute);font-weight:600;border-radius:10px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px}
+.dock button svg{width:22px;height:22px}
+.dock button.on{color:var(--acc);background:var(--acc2)}
+.doc{display:flex;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.doc:first-child{border-top:0}
+.doc .nm{flex:1;min-width:0}
+.doc .nm b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc .nm span{color:var(--mute);font-size:16px}
+.x{background:transparent;color:var(--mute);border:1px solid var(--line);min-height:40px;width:40px;padding:0;font-weight:400}
+.stat{display:flex;gap:8px}
+.stat div{flex:1;background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{color:var(--mute);font-size:16px}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0}
+.toggle input{width:52px;height:30px;appearance:none;-webkit-appearance:none;background:var(--line);border-radius:99px;position:relative;flex:none;cursor:pointer;transition:.2s}
+.toggle input::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.toggle input:checked{background:var(--acc)}
+.toggle input:checked::after{left:25px}
+.crumb{display:flex;gap:4px;flex-wrap:wrap;font-size:16px;margin:8px 0}
+.crumb a{color:var(--acc);text-decoration:none;font-weight:600}
+.flist{max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.fi{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line);font-size:16px}
+.fi:first-child{border-top:0}
+.fi .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi.folder{cursor:pointer;font-weight:600}
+.fi.off{opacity:.45}
+.fi input{width:22px;height:22px;accent-color:var(--acc)}
+.ico{flex:none;width:28px;text-align:center;font-size:16px;font-weight:700;color:var(--mute)}
+.note{font-size:16px;color:var(--mute);background:var(--bg);border-radius:12px;padding:10px 12px;margin:8px 0}
+.note.w{background:var(--warn2);color:var(--warn)}
+ol.gsteps{list-style:none;counter-reset:g;padding:0;margin:10px 0 0}
+ol.gsteps li{counter-increment:g;position:relative;padding:0 0 14px 38px;margin:0}
+ol.gsteps li::before{content:counter(g);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--acc2);color:var(--acc);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:16px}
+ol.gsteps li:not(:last-child)::after{content:"";position:absolute;left:12px;top:30px;bottom:4px;width:2px;background:var(--line)}
+ol.gsteps b{display:block}
+ol.gsteps span{display:block;color:var(--mute)}
+a.lnk{display:inline-flex;align-items:center;margin-top:6px;padding:8px 12px;border-radius:10px;background:var(--acc2);color:var(--acc);font-weight:700;text-decoration:none;font-size:16px;min-height:40px}
+.orow{display:flex!important;gap:6px;align-items:center;margin-top:6px}
+.orow code{flex:1;padding:8px;color:var(--ink)}
+button.mini{min-height:40px;padding:6px 12px;flex:none}
+code{font-size:15px;background:var(--bg);padding:1px 5px;border-radius:5px;word-break:break-all}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:40;display:none;justify-content:center;background:rgba(0,0,0,.35);top:0;align-items:flex-end}
+.sheet.on{display:flex}
+.sheet .in{background:var(--card);width:100%;max-width:430px;border-radius:20px 20px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 16px);max-height:80vh;display:flex;flex-direction:column}
+.sheet h3{margin:0 0 2px;font-size:18px}
+.sheet .f{color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar{height:8px;background:var(--line);border-radius:9px;overflow:hidden;margin:10px 0}
+.pbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+.log{flex:1;overflow:auto;font-size:16px;margin:6px 0 12px;border-top:1px solid var(--line);padding-top:8px;min-height:60px}
+.log div{padding:3px 0;color:var(--mute)}
+.log div b{color:var(--ink);font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:16px;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+.toast.on{opacity:1}
+.hide{display:none!important}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">K-SEEK<small>폰 안에서만 도는 문서 검색</small></div>
+    <div class="pill" id="pill">모델 확인 중</div>
+  </header>
+
+  <!-- 검색 -->
+  <section class="tab on" id="tab-search">
+    <div class="card">
+      <textarea id="q" placeholder="예) 향후 5년간 프리미엄 TV 디자인 전략에 필요한 자료를 찾아줘"></textarea>
+      <div class="chips" id="examples"></div>
+      <div class="row" style="margin-top:12px">
+        <select id="scope" aria-label="검색 범위"><option value="all">전체 자료</option><option value="local">휴대폰 자료</option><option value="drive">드라이브 자료</option></select>
+        <select id="topn" aria-label="결과 수"><option value="20">결과 20개</option><option value="50">결과 50개</option><option value="100">결과 100개</option></select>
+      </div>
+      <button class="wide" id="go" style="margin-top:10px">검색</button>
+    </div>
+    <div class="qinfo hide" id="qinfo"></div>
+    <div id="results"><div class="empty" id="empty0">문서를 추가하면 여기서 문장 단위로 찾아 드립니다.</div></div>
+    <div class="actions hide" id="acts">
+      <button id="xls">Excel 저장</button>
+      <button class="ghost" id="share">공유</button>
+    </div>
+  </section>
+
+  <!-- 자료 추가 -->
+  <section class="tab" id="tab-add">
+    <div class="card">
+      <h2>휴대폰 문서</h2>
+      <p>고른 폴더·파일만 읽습니다. PDF, Word(.docx), TXT·MD·CSV, 이미지(문자 인식 켰을 때).</p>
+      <div class="row">
+        <button id="pickDir">폴더 선택</button>
+        <button class="ghost" id="pickFiles">파일 선택</button>
+      </div>
+      <input type="file" id="inDir" webkitdirectory directory multiple class="hide">
+      <input type="file" id="inFiles" multiple accept=".pdf,.docx,.txt,.md,.csv,image/*,application/pdf" class="hide">
+      <div class="toggle" style="margin-top:10px"><div>문자 인식(OCR)<br><span style="color:var(--mute)">스캔 PDF·사진 속 글자 읽기 · 느림</span></div><input type="checkbox" id="ocr"></div>
+    </div>
+
+    <div class="card">
+      <h2>구글 드라이브</h2>
+      <p>드라이브에서 파일을 내려받아 폰 안에서 분석합니다. 검색어는 밖으로 나가지 않습니다.</p>
+      <div id="dNoId"><div class="note w">처음 한 번, 구글에서 클라이언트 ID를 만들어 넣어야 연결됩니다 (5분 정도).</div><button class="ghost wide" id="goGuide">설정 방법과 링크 보기</button></div>
+      <button class="wide hide" id="dConnect">구글 계정 연결</button>
+      <div id="dBrowser" class="hide">
+        <div class="row" style="margin-top:4px">
+          <select id="dRoot"><option value="root">내 드라이브</option><option value="shared">공유 문서함</option></select>
+          <button class="ghost" id="dOut" style="flex:0 0 auto">연결 해제</button>
+        </div>
+        <div class="crumb" id="dCrumb"></div>
+        <div class="flist" id="dList"></div>
+        <div class="row" style="margin-top:10px">
+          <button id="dSel" disabled>선택 색인</button>
+          <button class="ghost" id="dAll">이 폴더 전체</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 색인 -->
+  <section class="tab" id="tab-lib">
+    <div class="card">
+      <div class="stat">
+        <div><b id="stDocs">0</b><span>문서</span></div>
+        <div><b id="stChunks">0</b><span>조각</span></div>
+        <div><b id="stMb">–</b><span>사용 공간</span></div>
+      </div>
+    </div>
+    <div class="card"><div id="docList"><div class="empty">아직 색인된 문서가 없습니다.</div></div></div>
+    <button class="warn wide" id="wipe">색인 전체 삭제</button>
+  </section>
+
+  <!-- 설정 -->
+  <section class="tab" id="tab-set">
+    <div class="card">
+      <h2>AI 모델</h2>
+      <p>multilingual-e5-small (약 120MB, 한국어·영어). 처음 한 번 받아 두면 이후엔 인터넷 없이 분석합니다.</p>
+      <label class="lab" for="device">계산 방식</label>
+      <select id="device"><option value="wasm">CPU (WASM) · 안정적</option><option value="webgpu">GPU (WebGPU) · 빠름, 안 되면 CPU로</option></select>
+      <button class="wide" id="loadModel" style="margin-top:10px">모델 내려받기 / 준비</button>
+    </div>
+    <div class="card">
+      <h2>문자 인식(OCR)</h2>
+      <label class="lab" for="ocrLang">인식 언어</label>
+      <select id="ocrLang"><option value="kor+eng">한국어 + 영어</option><option value="kor">한국어</option><option value="eng">영어</option></select>
+      <button class="ghost wide" id="ocrPre" style="margin-top:10px">OCR 데이터 미리 받기 (약 15MB)</button>
+    </div>
+    <div class="card">
+      <h2>구글 드라이브 연결</h2>
+      <label class="lab" for="cid">OAuth 클라이언트 ID</label>
+      <input type="text" id="cid" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off" spellcheck="false">
+      <button class="wide" id="cidSave" style="margin-top:10px">저장</button>
+      <details id="gGuide" style="margin-top:10px"><summary>클라이언트 ID 만드는 법 (한 번만)</summary>
+        <ol class="gsteps">
+          <li><b>새 프로젝트 만들기</b><span>이름은 아무거나 (예: k-seek)</span>
+            <a class="lnk" href="https://console.cloud.google.com/projectcreate" target="_blank" rel="noopener">프로젝트 만들기 열기 ↗</a></li>
+          <li><b>Google Drive API 사용 설정</b><span>위에서 만든 프로젝트가 선택된 상태에서 ‘사용’ 누르기</span>
+            <a class="lnk" href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Drive API 열기 ↗</a></li>
+          <li><b>OAuth 동의 화면(브랜딩)</b><span>‘시작하기’ → 앱 이름 입력 → 대상: 외부 → 연락처에 본인 Gmail</span>
+            <a class="lnk" href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">동의 화면 열기 ↗</a></li>
+          <li><b>테스트 사용자에 본인 추가</b><span>대상 → 테스트 사용자 → 본인 Gmail 추가 (안 하면 로그인 거부됨)</span>
+            <a class="lnk" href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener">대상(테스트 사용자) 열기 ↗</a></li>
+          <li><b>OAuth 클라이언트 ID 만들기</b><span>유형: 웹 애플리케이션 → 승인된 JavaScript 원본에 아래 주소 추가</span>
+            <span class="orow"><code id="origin"></code><button class="ghost mini" id="copyOrigin">복사</button></span>
+            <a class="lnk" href="https://console.cloud.google.com/auth/clients/create" target="_blank" rel="noopener">클라이언트 만들기 열기 ↗</a></li>
+          <li><b>클라이언트 ID 붙여넣기</b><span>만들어진 ‘…apps.googleusercontent.com’ 값을 위 칸에 넣고 저장</span>
+            <a class="lnk" href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener">클라이언트 목록 열기 ↗</a></li>
+        </ol>
+        <div class="note">읽기 전용 권한(drive.readonly)만 요청합니다. 구글 로그인 정책상 Chrome 같은 브라우저에서 열었을 때 연결됩니다.</div>
+      </details>
+    </div>
+    <div class="card">
+      <h2>저장 공간</h2>
+      <p id="stoInfo">확인 중…</p>
+      <button class="ghost wide" id="persist">브라우저가 지우지 않도록 고정</button>
+    </div>
+    <div class="note">문서 내용, 검색어, 분석 결과는 이 폰의 브라우저 저장소에만 남습니다. 인터넷은 모델·라이브러리 첫 다운로드와 드라이브 파일 받을 때만 씁니다.</div>
+  </section>
+</div>
+
+<nav class="dock"><div class="in">
+  <button data-tab="search" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>검색</button>
+  <button data-tab="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>자료 추가</button>
+  <button data-tab="lib"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16M4 12h16M4 19h10"/></svg>색인</button>
+  <button data-tab="set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>설정</button>
+</div></nav>
+
+<div class="sheet" id="sheet"><div class="in">
+  <h3 id="shT">준비 중</h3>
+  <div class="f" id="shF"></div>
+  <div class="pbar"><i id="shP"></i></div>
+  <div class="f" id="shS"></div>
+  <div class="log" id="shLog"></div>
+  <button class="ghost wide" id="shBtn">중단</button>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/*PURE-START*/
+// ── 텍스트 처리 (DOM 없음, 테스트 가능) ─────────────────────
+const PURE = (() => {
+  const END = /([.!?。？！…:;)\]」』]|[다요음함됨임죠까])$/;
+  function splitSent(s){
+    return s.split(/(?<=[^\d\s][.!?。？！])\s+(?=\S)/).map(x => x.trim()).filter(Boolean);
+  }
+  function chop(s, n){
+    const out = [];
+    while (s.length > n * 1.4){
+      let cut = s.lastIndexOf(' ', n);
+      if (cut < n * 0.5) cut = n;
+      out.push(s.slice(0, cut).trim()); s = s.slice(cut).trim();
+    }
+    if (s) out.push(s);
+    return out;
+  }
+  // 줄바꿈이 많은 PDF 텍스트를 문장 단위로 묶는다
+  function toUnits(text){
+    const lines = String(text).replace(/\r/g, '').split('\n')
+      .map(l => l.replace(/[ \t 　]+/g, ' ').trim()).filter(Boolean);
+    const units = []; let acc = '';
+    const BUL = /^([•▪■●◦○□\-–*·※▶►]|\d{1,2}[.)]\s|\(\d{1,2}\)|[①-⑳]|[가-하][.)]\s)/;
+    for (const l of lines){
+      if (acc && BUL.test(l)){ units.push(...splitSent(acc)); acc = ''; }
+      acc = acc ? acc + ' ' + l : l;
+      if (END.test(l) || acc.length > 180){ units.push(...splitSent(acc)); acc = ''; }
+    }
+    if (acc) units.push(...splitSent(acc));
+    return units.flatMap(u => u.length > 420 ? chop(u, 300) : [u])
+      .filter(u => u.replace(/[\s\d.\-–·•]/g, '').length > 1);
+  }
+  function locRange(a, b){
+    if (a === b) return a;
+    const ma = /^(\D*?)\s*(\d+)$/.exec(a), mb = /^(\D*?)\s*(\d+)$/.exec(b);
+    if (ma && mb && ma[1] === mb[1]) return `${a}–${mb[2]}`;
+    return `${a} ~ ${b}`;
+  }
+  // segs: [{loc, text}] → [{loc, text}] 280~480자 조각, 한 문장 겹침
+  function makeChunks(segs){
+    const s = [];
+    for (const g of segs) for (const u of toUnits(g.text)) s.push({ loc: g.loc, t: u });
+    const out = []; let i = 0;
+    while (i < s.length){
+      let j = i, len = 0;
+      while (j < s.length){
+        const L = s[j].t.length;
+        if (j > i && (len >= 280 || len + L > 480)) break;
+        len += L + 1; j++;
+      }
+      const part = s.slice(i, j);
+      out.push({ loc: locRange(part[0].loc, part[part.length - 1].loc), text: part.map(x => x.t).join(' ') });
+      if (j >= s.length) break;
+      i = (j - i > 1) ? j - 1 : j;
+    }
+    return out;
+  }
+  function paraSegs(text, label = '문단'){
+    const t = String(text).replace(/\r/g, '');
+    let paras = t.split(/\n\s*\n/).map(x => x.trim()).filter(Boolean);
+    if (paras.length < 3) paras = t.split('\n').map(x => x.trim()).filter(Boolean);
+    return paras.map((p, i) => ({ loc: `${label} ${i + 1}`, text: p }));
+  }
+  // "…자료를 찾아줘" 같은 요청 꼬리를 떼어 검색 의도만 남긴다
+  function cleanQuery(q){
+    let s = String(q).trim().replace(/[?？!.。~]+$/, '').trim();
+    for (let k = 0; k < 3; k++){
+      const before = s;
+      s = s.replace(/\s*(관련(된)?\s*)?(자료|내용|문서|정보|근거|문장|부분|것)?\s*(들)?(을|를|이|가)?\s*(좀\s*)?(찾아|알려|뽑아|정리해|보여|모아|추려|골라)\s*(줘|줄래|주세요|주십시오|봐|봐줘|주라)?$/, '');
+      s = s.replace(/\s*(에|을|를|과|와)?\s*(필요한|관련된|관련한|관한|대한|도움이?\s*되는|쓸\s*만한|참고할)$/, '');
+      s = s.replace(/[?？!.。~]+$/, '').trim();
+      if (s === before) break;
+    }
+    return s || String(q).trim();
+  }
+  const PART = /(으로서|으로써|에서는|에게서|으로|에서|에게|까지|부터|이나|이며|에는|에도|과의|와의|들의|들을|들이|의|을|를|은|는|이|가|와|과|도|로|만|에|간)$/;
+  const STOP = new Set(['향후','관련','대한','위한','통한','있는','하는','및','등','자료','내용','필요한','어떤','무엇','어떻게','대해','관해','그리고','또는','많은','되는','같은','최근']);
+  function keywords(q){
+    const out = [];
+    for (let w of String(q).toLowerCase().split(/[\s,·/|()"'“”‘’]+/)){
+      if (!w) continue;
+      const m = PART.exec(w);
+      if (m && w.length - m[0].length >= 2) w = w.slice(0, -m[0].length);
+      if (w.length < 2 || STOP.has(w)) continue;
+      if (!out.includes(w)) out.push(w);
+    }
+    return out;
+  }
+  function kwScore(text, kws){
+    if (!kws.length) return 0;
+    const t = text.toLowerCase(); let h = 0;
+    for (const k of kws) if (t.includes(k)) h++;
+    return h / kws.length;
+  }
+  function dot(a, b){ let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+  function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function highlight(text, kws){
+    let h = esc(text);
+    const ks = [...kws].sort((a, b) => b.length - a.length).map(k => esc(k).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    if (!ks.length) return h;
+    return h.replace(new RegExp('(' + ks.join('|') + ')', 'gi'), '<mark>$1</mark>');
+  }
+  function pickSentences(text){
+    const ss = toUnits(text);
+    return ss.length ? ss : [text];
+  }
+  return { splitSent, toUnits, makeChunks, paraSegs, cleanQuery, keywords, kwScore, dot, esc, highlight, pickSentences, locRange };
+})();
+if (typeof module !== 'undefined') module.exports = PURE;
+/*PURE-END*/
+</script>
+
+<script>
+'use strict';
+const { makeChunks, paraSegs, cleanQuery, keywords, kwScore, dot, esc, highlight, pickSentences } = PURE;
+const $ = s => document.querySelector(s);
+const CDN = {
+  pdf: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+  pdfw: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js',
+  cmaps: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+  fonts: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+  mammoth: 'https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js',
+  xlsx: 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+  tess: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+  gis: 'https://accounts.google.com/gsi/client',
+  tf: 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1/dist/transformers.min.js'
+};
+const MODEL = 'Xenova/multilingual-e5-small';
+
+// ── 설정 ─────────────────────────────────────────────
+const CFG = Object.assign({ device: 'wasm', ocr: false, ocrLang: 'kor+eng', topN: 50, scope: 'all', clientId: '' },
+  (() => { try { return JSON.parse(localStorage.getItem('kseek.cfg') || '{}'); } catch (e) { return {}; } })());
+function saveCfg(){ try { localStorage.setItem('kseek.cfg', JSON.stringify(CFG)); } catch (e) {} }
+
+// ── 공용 ─────────────────────────────────────────────
+const scripts = {};
+function loadScript(src){
+  if (!scripts[src]) scripts[src] = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = src; s.async = true;
+    s.onload = res; s.onerror = () => { delete scripts[src]; rej(new Error('라이브러리를 불러오지 못했습니다 (인터넷 연결 확인)')); };
+    document.head.appendChild(s);
+  });
+  return scripts[src];
+}
+let toastT;
+function toast(msg, ms = 2600){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), ms); }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ── 임베딩 워커 ───────────────────────────────────────
+const WORKER_SRC = `
+import { pipeline, env } from '${CDN.tf}';
+env.allowLocalModels = false;
+env.useBrowserCache = true;
+let ext = null, dev = 'wasm';
+const prog = p => self.postMessage({ type: 'progress', p });
+self.onmessage = async (e) => {
+  const m = e.data;
+  try {
+    if (m.type === 'init') {
+      if (!ext) {
+        if (m.device === 'webgpu' && self.navigator && navigator.gpu) {
+          try { ext = await pipeline('feature-extraction', m.model, { device: 'webgpu', dtype: 'fp32', progress_callback: prog }); dev = 'webgpu'; }
+          catch (err) { ext = null; }
+        }
+        if (!ext) { ext = await pipeline('feature-extraction', m.model, { device: 'wasm', dtype: 'q8', progress_callback: prog }); dev = 'wasm'; }
+      }
+      self.postMessage({ type: 'ready', id: m.id, dev });
+    } else if (m.type === 'embed') {
+      const out = await ext(m.texts, { pooling: 'mean', normalize: true });
+      const data = new Float32Array(out.data);
+      self.postMessage({ type: 'vecs', id: m.id, data, n: m.texts.length }, [data.buffer]);
+    }
+  } catch (err) {
+    self.postMessage({ type: 'error', id: m.id, message: String((err && err.message) || err) });
+  }
+};`;
+const W = { w: null, ready: null, id: 0, pend: new Map(), dev: '', files: {} , dim: 384};
+function worker(){
+  if (W.w) return W.w;
+  W.w = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })), { type: 'module' });
+  W.w.onmessage = (e) => {
+    const m = e.data;
+    if (m.type === 'progress'){
+      const p = m.p;
+      if (p.status === 'progress' && p.file){ W.files[p.file] = { l: p.loaded || 0, t: p.total || 0 }; }
+      const fs = Object.values(W.files), t = fs.reduce((a, b) => a + b.t, 0), l = fs.reduce((a, b) => a + b.l, 0);
+      if (t > 1e6){ const pct = Math.round(l / t * 100); setPill(`모델 받는 중 ${pct}%`); if (RUN.busy) setSheet({ pct, step: `AI 모델 내려받는 중 ${(l/1048576).toFixed(0)} / ${(t/1048576).toFixed(0)}MB` }); }
+      return;
+    }
+    const h = W.pend.get(m.id); if (!h) return; W.pend.delete(m.id);
+    if (m.type === 'error') h.rej(new Error(m.message));
+    else h.res(m);
+  };
+  W.w.onerror = (e) => { for (const h of W.pend.values()) h.rej(new Error('AI 워커 오류: ' + (e.message || ''))); W.pend.clear(); };
+  return W.w;
+}
+function rpc(msg){ const id = ++W.id; return new Promise((res, rej) => { W.pend.set(id, { res, rej }); worker().postMessage({ ...msg, id }); }); }
+function initModel(){
+  if (!W.ready){
+    setPill('모델 불러오는 중');
+    W.ready = rpc({ type: 'init', model: MODEL, device: CFG.device }).then(m => {
+      W.dev = m.dev; setPill(`모델 준비됨 · ${m.dev === 'webgpu' ? 'GPU' : 'CPU'}`, true);
+      if (CFG.device === 'webgpu' && m.dev !== 'webgpu') toast('이 기기에서 WebGPU를 쓸 수 없어 CPU로 실행합니다');
+    }).catch(e => { W.ready = null; setPill('모델 준비 실패'); throw new Error('AI 모델을 불러오지 못했습니다: ' + e.message); });
+  }
+  return W.ready;
+}
+async function embed(texts){
+  await initModel();
+  const m = await rpc({ type: 'embed', texts });
+  W.dim = m.data.length / m.n;
+  return m.data;
+}
+function setPill(t, ok){ const p = $('#pill'); p.textContent = t; p.classList.toggle('ok', !!ok); }
+
+// ── IndexedDB ─────────────────────────────────────────
+const DB = { db: null };
+const S = { docs: new Map(), chunks: [], last: null };
+function idbOpen(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('kseek', 1);
+    r.onupgradeneeded = () => { const d = r.result; d.createObjectStore('docs', { keyPath: 'id' }); d.createObjectStore('chunks', { keyPath: 'id', autoIncrement: true }).createIndex('docId', 'docId'); };
+    r.onsuccess = () => res(DB.db = r.result); r.onerror = () => rej(r.error);
+  });
+}
+const reqP = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const txDone = t => new Promise((res, rej) => { t.oncomplete = res; t.onerror = t.onabort = () => rej(t.error || new Error('저장 실패')); });
+async function loadAll(){
+  const t = DB.db.transaction(['docs', 'chunks']);
+  const [docs, chunks] = await Promise.all([reqP(t.objectStore('docs').getAll()), reqP(t.objectStore('chunks').getAll())]);
+  S.docs = new Map(docs.map(d => [d.id, d])); S.chunks = chunks;
+}
+async function saveDoc(doc, rows){
+  const t = DB.db.transaction(['docs', 'chunks'], 'readwrite');
+  t.objectStore('docs').put(doc);
+  const cs = t.objectStore('chunks');
+  for (const r of rows){ const q = cs.add(r); q.onsuccess = () => { r.id = q.result; }; }
+  await txDone(t);
+}
+async function removeDoc(id){
+  const t = DB.db.transaction(['docs', 'chunks'], 'readwrite');
+  t.objectStore('docs').delete(id);
+  const cs = t.objectStore('chunks');
+  const cur = cs.index('docId').openKeyCursor(IDBKeyRange.only(id));
+  cur.onsuccess = () => { const c = cur.result; if (c){ cs.delete(c.primaryKey); c.continue(); } };
+  await txDone(t);
+  S.docs.delete(id); S.chunks = S.chunks.filter(c => c.docId !== id);
+}
+
+// ── 문서 읽기 ─────────────────────────────────────────
+let TW = null, TWlang = '';
+async function ocr(img){
+  await loadScript(CDN.tess);
+  if (!TW || TWlang !== CFG.ocrLang){
+    if (TW) await TW.terminate();
+    TW = await Tesseract.createWorker(CFG.ocrLang.split('+')); TWlang = CFG.ocrLang;
+  }
+  const r = await TW.recognize(img);
+  // 한글 낱자 사이에 끼는 공백 정리
+  return (r.data.text || '').replace(/(?<=[가-힣]) (?=[가-힣](?:\s|$))/g, '');
+}
+async function pdfSegs(buf, step){
+  await loadScript(CDN.pdf);
+  pdfjsLib.GlobalWorkerOptions.workerSrc = CDN.pdfw;
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf), cMapUrl: CDN.cmaps, cMapPacked: true, standardFontDataUrl: CDN.fonts, isEvalSupported: false }).promise;
+  const segs = []; let ocrUsed = false, empty = 0;
+  try {
+    for (let p = 1; p <= pdf.numPages; p++){
+      if (RUN.cancel) throw new Error('중단됨');
+      step(`${p} / ${pdf.numPages}쪽 읽는 중`, p / pdf.numPages * 40);
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      let t = '';
+      for (const x of tc.items){ if (x.str !== undefined){ t += x.str; if (x.hasEOL) t += '\n'; } }
+      if (t.replace(/\s/g, '').length < 20){
+        if (CFG.ocr){
+          step(`${p} / ${pdf.numPages}쪽 문자 인식 중`, p / pdf.numPages * 40);
+          const vp = page.getViewport({ scale: 2 });
+          const cv = document.createElement('canvas'); cv.width = vp.width; cv.height = vp.height;
+          await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+          t = await ocr(cv); ocrUsed = true; cv.width = cv.height = 0;
+        } else empty++;
+      }
+      if (t.trim()) segs.push({ loc: 'p.' + p, text: t });
+      page.cleanup();
+    }
+  } finally { pdf.destroy(); }
+  segs.ocr = ocrUsed; segs.emptyPages = empty;
+  if (!segs.length && empty) throw new Error('글자가 없는 스캔 PDF입니다 — 문자 인식(OCR)을 켜고 다시 추가하세요');
+  return segs;
+}
+async function extract(it, step){
+  if (it.kind === 'text'){ step('텍스트 읽는 중', 20); return paraSegs(await it.getText()); }
+  if (it.kind === 'docx'){
+    step('Word 읽는 중', 10); await loadScript(CDN.mammoth);
+    const r = await mammoth.extractRawText({ arrayBuffer: await it.getBuffer() });
+    return paraSegs(r.value);
+  }
+  if (it.kind === 'pdf'){ step('PDF 여는 중', 5); return pdfSegs(await it.getBuffer(), step); }
+  if (it.kind === 'image'){
+    if (!CFG.ocr) throw new Error('이미지는 문자 인식(OCR)을 켜야 읽을 수 있습니다');
+    step('이미지 문자 인식 중', 20);
+    const s = paraSegs(await ocr(await it.getBlob()), '이미지 줄'); s.ocr = true; return s;
+  }
+  throw new Error('지원하지 않는 형식');
+}
+function kindOf(name, mime = ''){
+  const e = (name.split('.').pop() || '').toLowerCase();
+  if (e === 'pdf' || mime === 'application/pdf') return 'pdf';
+  if (e === 'docx') return 'docx';
+  if (['txt', 'md', 'csv', 'tsv', 'json'].includes(e) || mime.startsWith('text/')) return 'text';
+  if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'heic'].includes(e) || mime.startsWith('image/')) return 'image';
+  return null;
+}
+
+// ── 색인 실행 ─────────────────────────────────────────
+const RUN = { busy: false, cancel: false };
+function sheetOpen(){ $('#shLog').innerHTML = ''; $('#shBtn').textContent = '중단'; $('#sheet').classList.add('on'); }
+function setSheet(o){
+  if (o.title != null) $('#shT').textContent = o.title;
+  if (o.file != null) $('#shF').textContent = o.file;
+  if (o.step != null) $('#shS').textContent = o.step;
+  if (o.pct != null) $('#shP').style.width = Math.max(0, Math.min(100, o.pct)) + '%';
+}
+function log(icon, name, msg){ const d = document.createElement('div'); d.innerHTML = `${icon} <b>${esc(name)}</b> ${esc(msg || '')}`; $('#shLog').prepend(d); }
+$('#shBtn').onclick = () => { if (RUN.busy){ RUN.cancel = true; $('#shBtn').textContent = '멈추는 중…'; } else $('#sheet').classList.remove('on'); };
+
+async function indexItems(items){
+  if (RUN.busy) return toast('이미 색인 중입니다');
+  items = items.filter(it => it.kind);
+  if (!items.length) return toast('읽을 수 있는 문서가 없습니다');
+  RUN.busy = true; RUN.cancel = false; sheetOpen();
+  let n = 0, added = 0, skipped = 0, failed = 0, chunksAdded = 0;
+  try {
+    try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+    setSheet({ title: 'AI 모델 준비 중', file: '', step: '처음이면 약 120MB를 받습니다', pct: 0 });
+    await initModel();
+    for (const it of items){
+      if (RUN.cancel) break;
+      n++;
+      if (S.docs.has(it.key)){ skipped++; log('↷', it.name, '이미 색인됨'); continue; }
+      setSheet({ title: `${n} / ${items.length} 문서`, file: it.name, step: '여는 중', pct: 0 });
+      try {
+        const segs = await extract(it, (msg, pct) => setSheet({ step: msg, pct }));
+        const chunks = makeChunks(segs);
+        if (!chunks.length) throw new Error('읽을 글자가 없습니다');
+        const B = 16;
+        for (let i = 0; i < chunks.length; i += B){
+          if (RUN.cancel) throw new Error('중단됨');
+          const b = chunks.slice(i, i + B);
+          const out = await embed(b.map(c => 'passage: ' + c.text));
+          const d = out.length / b.length;
+          b.forEach((c, j) => { c.vec = out.slice(j * d, (j + 1) * d); });
+          const k = Math.min(i + B, chunks.length);
+          setSheet({ step: `AI 분석 ${k} / ${chunks.length} 조각`, pct: 40 + k / chunks.length * 60 });
+          await sleep(0);
+        }
+        // 같은 파일의 예전 버전은 지운다
+        for (const [id, d] of S.docs) if (d.base === it.base) await removeDoc(id);
+        const doc = { id: it.key, base: it.base, name: it.name, path: it.path || it.name, source: it.source, link: it.link || '',
+          size: it.size || 0, mtime: it.mtime || '', segs: segs.length, chunks: chunks.length, ocr: !!segs.ocr, addedAt: Date.now() };
+        const rows = chunks.map(c => ({ docId: doc.id, loc: c.loc, text: c.text, vec: c.vec }));
+        await saveDoc(doc, rows);
+        S.docs.set(doc.id, doc); for (const r of rows) S.chunks.push(r);
+        added++; chunksAdded += rows.length;
+        log('✓', it.name, `${rows.length}조각${segs.ocr ? ' · OCR' : ''}${segs.emptyPages ? ` · 글자 없는 쪽 ${segs.emptyPages}` : ''}`);
+      } catch (e){
+        if (e.message === '중단됨') break;
+        failed++; log('⚠', it.name, e.message);
+      }
+    }
+  } catch (e){
+    log('⚠', '오류', e.message); failed++;
+  } finally {
+    RUN.busy = false;
+    setSheet({ title: RUN.cancel ? '중단했습니다' : '색인 완료', file: `추가 ${added} · 건너뜀 ${skipped} · 실패 ${failed}`, step: `새 조각 ${chunksAdded}개`, pct: 100 });
+    $('#shBtn').textContent = '닫기';
+    renderLib();
+  }
+}
+
+// ── 휴대폰 파일 ───────────────────────────────────────
+function fileItems(files){
+  return [...files].map(f => {
+    const path = f.webkitRelativePath || f.name;
+    const base = 'local:' + path;
+    return { key: `${base}:${f.size}:${f.lastModified}`, base, name: f.name, path, source: 'local', size: f.size,
+      mtime: new Date(f.lastModified).toISOString(), kind: kindOf(f.name, f.type),
+      getBuffer: () => f.arrayBuffer(), getText: () => f.text(), getBlob: async () => f };
+  });
+}
+$('#pickDir').onclick = () => $('#inDir').click();
+$('#pickFiles').onclick = () => $('#inFiles').click();
+for (const id of ['#inDir', '#inFiles']){
+  $(id).onchange = (e) => {
+    const items = fileItems(e.target.files);
+    e.target.value = '';
+    const ok = items.filter(i => i.kind && (i.kind !== 'image' || CFG.ocr));
+    if (!ok.length) return toast(items.length ? '읽을 수 있는 문서가 없습니다 (이미지는 OCR을 켜야 합니다)' : '선택된 파일이 없습니다');
+    indexItems(ok);
+  };
+}
+// 폴더 선택을 못 쓰는 브라우저는 파일 선택으로 안내
+if (!('webkitdirectory' in document.createElement('input'))) $('#pickDir').onclick = () => { toast('이 브라우저는 폴더 선택을 지원하지 않아 파일 선택을 엽니다'); $('#inFiles').click(); };
+
+// ── 구글 드라이브 ─────────────────────────────────────
+const G = {
+  token: null, exp: 0, tc: null, stack: [], items: [], sel: new Set(),
+  M: { folder: 'application/vnd.google-apps.folder', gdoc: 'application/vnd.google-apps.document', gslide: 'application/vnd.google-apps.presentation', gsheet: 'application/vnd.google-apps.spreadsheet', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+};
+const API = 'https://www.googleapis.com/drive/v3/files';
+function gAuth(interactive = true){
+  return new Promise(async (res, rej) => {
+    if (!CFG.clientId) return rej(new Error('클라이언트 ID가 없습니다'));
+    try { await loadScript(CDN.gis); } catch (e) { return rej(e); }
+    for (let i = 0; i < 50 && !(window.google && google.accounts && google.accounts.oauth2); i++) await sleep(100);
+    G.tc = google.accounts.oauth2.initTokenClient({
+      client_id: CFG.clientId, scope: 'https://www.googleapis.com/auth/drive.readonly',
+      callback: r => { if (r.error) return rej(new Error('구글 연결 실패: ' + r.error)); G.token = r.access_token; G.exp = Date.now() + ((r.expires_in || 3600) - 60) * 1000; res(); },
+      error_callback: e => rej(new Error(e.type === 'popup_closed' ? '로그인 창이 닫혔습니다' : '구글 연결 실패: ' + (e.message || e.type)))
+    });
+    G.tc.requestAccessToken({ prompt: interactive && !G.token ? 'consent' : '' });
+  });
+}
+async function gfetch(url, as = 'json', retry = true){
+  if (!G.token || Date.now() > G.exp) await gAuth(false);
+  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + G.token } });
+  if (r.status === 401 && retry){ G.token = null; return gfetch(url, as, false); }
+  if (!r.ok){
+    let msg = r.status + '';
+    try { const j = await r.json(); msg = (j.error && j.error.message) || msg; } catch (e) {}
+    if (r.status === 403 && /export/.test(url)) msg = '내보내기 용량 제한(10MB)을 넘거나 권한이 없습니다';
+    throw new Error('드라이브: ' + msg);
+  }
+  return as === 'json' ? r.json() : as === 'text' ? r.text() : r.arrayBuffer();
+}
+function gKind(f){
+  const m = f.mimeType || '';
+  if (m === G.M.folder) return 'folder';
+  if (m === 'application/pdf') return 'pdf';
+  if (m === G.M.docx) return 'docx';
+  if (m === G.M.gdoc || m === G.M.gslide) return 'gtext';
+  if (m === G.M.gsheet) return 'gcsv';
+  if (m.startsWith('text/')) return 'text';
+  if (m.startsWith('image/')) return 'image';
+  return null;
+}
+function gItem(f, path){
+  const k = gKind(f), u = `${API}/${f.id}`, base = 'drive:' + f.id;
+  const it = { key: `${base}:${f.modifiedTime || ''}`, base, name: f.name, path, source: 'drive', link: f.webViewLink || '', size: +f.size || 0, mtime: f.modifiedTime || '' };
+  if (k === 'pdf' || k === 'docx'){ it.kind = k; it.getBuffer = () => gfetch(u + '?alt=media&supportsAllDrives=true', 'buf'); }
+  else if (k === 'gtext'){ it.kind = 'text'; it.getText = () => gfetch(u + '/export?mimeType=text/plain', 'text'); }
+  else if (k === 'gcsv'){ it.kind = 'text'; it.getText = () => gfetch(u + '/export?mimeType=text/csv', 'text'); }
+  else if (k === 'text'){ it.kind = 'text'; it.getText = () => gfetch(u + '?alt=media&supportsAllDrives=true', 'text'); }
+  else if (k === 'image'){ it.kind = 'image'; it.getBlob = async () => new Blob([await gfetch(u + '?alt=media&supportsAllDrives=true', 'buf')], { type: f.mimeType }); }
+  return it;
+}
+async function gList(folderId){
+  const out = []; let pt = '';
+  const q = folderId === 'shared' ? 'sharedWithMe=true and trashed=false' : `'${folderId}' in parents and trashed=false`;
+  do {
+    const url = `${API}?q=${encodeURIComponent(q)}&pageSize=200&orderBy=folder,name&supportsAllDrives=true&includeItemsFromAllDrives=true`
+      + `&fields=${encodeURIComponent('nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink)')}${pt ? '&pageToken=' + encodeURIComponent(pt) : ''}`;
+    const r = await gfetch(url); out.push(...(r.files || [])); pt = r.nextPageToken;
+  } while (pt);
+  return out;
+}
+function gPath(){ return G.stack.map(s => s.name).join(' / '); }
+async function gOpen(id, name, reset){
+  if (reset) G.stack = [];
+  G.stack.push({ id, name });
+  await gRender();
+}
+async function gRender(){
+  const cur = G.stack[G.stack.length - 1];
+  $('#dCrumb').innerHTML = G.stack.map((s, i) => i < G.stack.length - 1 ? `<a href="#" data-i="${i}">${esc(s.name)}</a> /` : `<b>${esc(s.name)}</b>`).join(' ');
+  $('#dList').innerHTML = '<div class="fi"><span class="spin"></span>불러오는 중</div>';
+  G.sel.clear(); updSel();
+  try { G.items = await gList(cur.id); }
+  catch (e){ $('#dList').innerHTML = `<div class="fi">${esc(e.message)}</div>`; return; }
+  if (!G.items.length){ $('#dList').innerHTML = '<div class="fi">빈 폴더입니다</div>'; return; }
+  $('#dList').innerHTML = G.items.map((f, i) => {
+    const k = gKind(f);
+    if (k === 'folder') return `<div class="fi folder" data-f="${i}"><span class="ico">▸</span><span class="n">${esc(f.name)}</span></div>`;
+    const ok = k && (k !== 'image' || CFG.ocr);
+    const done = S.docs.has(`drive:${f.id}:${f.modifiedTime || ''}`);
+    const tag = { pdf: 'PDF', docx: 'DOC', gtext: f.mimeType === G.M.gslide ? 'PPT' : 'DOC', gcsv: 'XLS', text: 'TXT', image: 'IMG' }[k] || '–';
+    return `<label class="fi ${ok ? '' : 'off'}"><span class="ico">${tag}</span><span class="n">${esc(f.name)}${done ? ' <span class="badge">색인됨</span>' : ''}</span>${ok ? `<input type="checkbox" data-s="${i}">` : ''}</label>`;
+  }).join('');
+}
+function updSel(){ $('#dSel').disabled = !G.sel.size; $('#dSel').textContent = G.sel.size ? `선택 색인 (${G.sel.size})` : '선택 색인'; }
+$('#dList').addEventListener('click', e => { const f = e.target.closest('[data-f]'); if (f){ const it = G.items[+f.dataset.f]; gOpen(it.id, it.name); } });
+$('#dList').addEventListener('change', e => { const c = e.target.closest('[data-s]'); if (!c) return; c.checked ? G.sel.add(+c.dataset.s) : G.sel.delete(+c.dataset.s); updSel(); });
+$('#dCrumb').addEventListener('click', e => { const a = e.target.closest('[data-i]'); if (!a) return; e.preventDefault(); G.stack = G.stack.slice(0, +a.dataset.i + 1); gRender(); });
+$('#dRoot').onchange = () => gOpen($('#dRoot').value, $('#dRoot').selectedOptions[0].textContent, true);
+$('#dConnect').onclick = async () => {
+  try { await gAuth(true); $('#dConnect').classList.add('hide'); $('#dBrowser').classList.remove('hide'); await gOpen('root', '내 드라이브', true); }
+  catch (e){ toast(e.message, 4000); }
+};
+$('#dOut').onclick = () => {
+  try { if (G.token && window.google) google.accounts.oauth2.revoke(G.token, () => {}); } catch (e) {}
+  G.token = null; G.exp = 0; $('#dBrowser').classList.add('hide'); $('#dConnect').classList.remove('hide'); toast('드라이브 연결을 해제했습니다');
+};
+$('#dSel').onclick = () => {
+  const items = [...G.sel].map(i => gItem(G.items[i], gPath() + ' / ' + G.items[i].name));
+  indexItems(items);
+};
+$('#dAll').onclick = async () => {
+  const start = G.stack[G.stack.length - 1];
+  $('#dAll').disabled = true; $('#dAll').innerHTML = '<span class="spin"></span>목록 수집';
+  try {
+    const items = [], queue = [{ id: start.id, path: gPath() }], seen = new Set();
+    while (queue.length && items.length < 1000){
+      const f = queue.shift(); if (seen.has(f.id)) continue; seen.add(f.id);
+      for (const x of await gList(f.id)){
+        const k = gKind(x);
+        if (k === 'folder') queue.push({ id: x.id, path: f.path + ' / ' + x.name });
+        else if (k && (k !== 'image' || CFG.ocr)) items.push(gItem(x, f.path + ' / ' + x.name));
+      }
+    }
+    if (!items.length) return toast('이 폴더(하위 포함)에 읽을 문서가 없습니다');
+    const fresh = items.filter(i => !S.docs.has(i.key)).length;
+    if (!confirm(`하위 폴더 포함 ${items.length}개 문서 (새로 분석 ${fresh}개)를 색인할까요?`)) return;
+    indexItems(items);
+  } catch (e){ toast(e.message, 4000); }
+  finally { $('#dAll').disabled = false; $('#dAll').textContent = '이 폴더 전체'; }
+};
+
+// ── 검색 ─────────────────────────────────────────────
+const EXAMPLES = ['향후 5년간 프리미엄 TV 디자인 전략에 필요한 자료를 찾아줘', '메탈 소재 마감 트렌드', '사용자 불만이 많은 사용성 문제'];
+$('#examples').innerHTML = EXAMPLES.map(e => `<button class="chip">${esc(e.length > 18 ? e.slice(0, 17) + '…' : e)}</button>`).join('');
+$('#examples').querySelectorAll('.chip').forEach((b, i) => b.onclick = () => { $('#q').value = EXAMPLES[i]; $('#q').focus(); });
+$('#scope').value = CFG.scope; $('#topn').value = String(CFG.topN);
+$('#scope').onchange = () => { CFG.scope = $('#scope').value; saveCfg(); };
+$('#topn').onchange = () => { CFG.topN = +$('#topn').value; saveCfg(); };
+$('#q').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); runSearch(); } });
+$('#go').onclick = runSearch;
+
+let searching = false;
+async function runSearch(){
+  const raw = $('#q').value.trim();
+  if (!raw || searching) return;
+  if (!S.chunks.length) return toast('먼저 자료 추가 탭에서 문서를 넣어 주세요');
+  const pool = S.chunks.filter(c => { if (CFG.scope === 'all') return true; const d = S.docs.get(c.docId); return d && d.source === CFG.scope; });
+  if (!pool.length) return toast('이 범위에는 색인된 문서가 없습니다');
+  searching = true; $('#go').disabled = true;
+  const cq = cleanQuery(raw), kws = keywords(cq);
+  $('#qinfo').classList.remove('hide');
+  $('#qinfo').innerHTML = `검색 의도: <b>${esc(cq)}</b>${kws.length ? ' · 핵심어 ' + kws.map(k => `<b>${esc(k)}</b>`).join(', ') : ''}`;
+  $('#results').innerHTML = '<div class="empty"><span class="spin"></span>의미를 비교하는 중</div>';
+  try {
+    const qv = await embed(['query: ' + cq]);
+    const N = CFG.topN;
+    const scored = pool.map(c => { const sim = dot(qv, c.vec), kw = kwScore(c.text, kws); return { c, sim, kw, score: sim + 0.12 * kw }; });
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, Math.min(scored.length, Math.ceil(N * 1.3)));
+    // 각 조각 안에서 질의와 가장 가까운 문장 고르기
+    const REF = Math.min(top.length, 40);
+    const list = [];
+    top.forEach((r, ri) => {
+      r.sents = pickSentences(r.c.text);
+      if (ri < REF && r.sents.length > 1) r.sents.forEach((s, si) => list.push({ r, s, si }));
+    });
+    for (let i = 0; i < list.length; i += 32){
+      $('#results').innerHTML = `<div class="empty"><span class="spin"></span>관련 문장 고르는 중 ${Math.round(i / list.length * 100)}%</div>`;
+      const b = list.slice(i, i + 32);
+      const out = await embed(b.map(x => 'passage: ' + x.s));
+      const d = out.length / b.length;
+      b.forEach((x, j) => { x.v = dot(qv, out.subarray(j * d, (j + 1) * d)) + 0.1 * kwScore(x.s, kws); });
+    }
+    const bestOf = new Map();
+    for (const x of list){ const b = bestOf.get(x.r); if (!b || x.v > b.v) bestOf.set(x.r, x); }
+    const seen = new Set(), items = [];
+    for (const r of top){
+      let si = 0;
+      const b = bestOf.get(r);
+      if (b) si = b.si;
+      else if (r.sents.length > 1){ let bv = -1; r.sents.forEach((s, k) => { const v = kwScore(s, kws) + s.length / 1e4; if (v > bv){ bv = v; si = k; } }); }
+      let sent = r.sents[si] || r.c.text;
+      if (sent.length < 40 && r.sents[si + 1]) sent += ' ' + r.sents[si + 1];
+      const key = r.c.docId + '|' + sent;
+      if (seen.has(key)) continue; seen.add(key);
+      const doc = S.docs.get(r.c.docId) || { name: '?', source: 'local', path: '', link: '' };
+      items.push({ sim: r.sim, score: r.score, sent, ctx: r.c.text, loc: r.c.loc, doc });
+      if (items.length >= N) break;
+    }
+    S.last = { raw, cq, kws, at: new Date(), items, scope: CFG.scope, pool: pool.length };
+    renderResults();
+  } catch (e){
+    $('#results').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  } finally { searching = false; $('#go').disabled = false; }
+}
+function renderResults(){
+  const L = S.last;
+  if (!L.items.length){ $('#results').innerHTML = '<div class="empty">관련 문장을 찾지 못했습니다.</div>'; $('#acts').classList.add('hide'); return; }
+  const hi = L.items[0].sim, lo = Math.min(...L.items.map(x => x.sim));
+  $('#results').innerHTML = L.items.map((x, i) => {
+    const w = hi - lo < 1e-6 ? 100 : 25 + (x.sim - lo) / (hi - lo) * 75;
+    return `<article class="res">
+      <div class="rhead"><span class="rank">${String(i + 1).padStart(2, '0')}</span><span class="bar"><i style="width:${w.toFixed(0)}%"></i></span><span class="num">${(x.sim * 100).toFixed(0)}</span></div>
+      <p class="sent">${highlight(x.sent, L.kws)}</p>
+      <div class="meta"><span class="badge ${x.doc.source === 'drive' ? 'd' : ''}">${x.doc.source === 'drive' ? '드라이브' : '휴대폰'}</span>${esc(x.doc.name)} · ${esc(x.loc)}</div>
+      <details><summary>문맥 보기</summary><p>${highlight(x.ctx, L.kws)}</p></details>
+    </article>`;
+  }).join('');
+  $('#acts').classList.remove('hide');
+}
+
+// ── Excel ───────────────────────────────────────────
+function stamp(d){ const p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`; }
+async function buildXlsx(){
+  await loadScript(CDN.xlsx);
+  const L = S.last;
+  const rows = [['순위', '관련도', '관련 문장', '문서명', '위치', '출처', '경로', '문맥(원문 조각)', '링크']];
+  L.items.forEach((x, i) => rows.push([i + 1, +(x.sim * 100).toFixed(1), x.sent, x.doc.name, x.loc, x.doc.source === 'drive' ? '구글 드라이브' : '휴대폰', x.doc.path || '', x.ctx, x.doc.link || '']));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 5 }, { wch: 7 }, { wch: 70 }, { wch: 30 }, { wch: 9 }, { wch: 11 }, { wch: 40 }, { wch: 90 }, { wch: 40 }];
+  ws['!autofilter'] = { ref: `A1:I${rows.length}` };
+  L.items.forEach((x, i) => { const c = ws['I' + (i + 2)]; if (c && x.doc.link) c.l = { Target: x.doc.link }; });
+  const by = new Map();
+  L.items.forEach((x, i) => { const k = x.doc.name + '|' + x.doc.path; const o = by.get(k) || { d: x.doc, n: 0, best: 0, first: i + 1, locs: [] }; o.n++; o.best = Math.max(o.best, x.sim); if (o.locs.length < 8 && !o.locs.includes(x.loc)) o.locs.push(x.loc); by.set(k, o); });
+  const rows2 = [['문서명', '관련 문장 수', '최고 관련도', '첫 등장 순위', '주요 위치', '출처', '경로']];
+  [...by.values()].sort((a, b) => b.n - a.n || b.best - a.best).forEach(o => rows2.push([o.d.name, o.n, +(o.best * 100).toFixed(1), o.first, o.locs.join(', '), o.d.source === 'drive' ? '구글 드라이브' : '휴대폰', o.d.path || '']));
+  const ws2 = XLSX.utils.aoa_to_sheet(rows2);
+  ws2['!cols'] = [{ wch: 34 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 30 }, { wch: 12 }, { wch: 40 }];
+  const ws3 = XLSX.utils.aoa_to_sheet([
+    ['항목', '값'], ['입력한 요청', L.raw], ['검색 의도', L.cq], ['핵심어', L.kws.join(', ')],
+    ['검색 일시', L.at.toLocaleString('ko-KR')], ['검색 범위', { all: '전체', local: '휴대폰', drive: '구글 드라이브' }[L.scope]],
+    ['검색한 조각 수', L.pool], ['결과 수', L.items.length], ['AI 모델', MODEL + ' (기기 안에서 실행)'],
+    ['관련도', '질의와 문장 의미의 코사인 유사도 × 100 (e5 모델 특성상 보통 75~92 사이)']
+  ]);
+  ws3['!cols'] = [{ wch: 14 }, { wch: 80 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '검색결과');
+  XLSX.utils.book_append_sheet(wb, ws2, '문서별 요약');
+  XLSX.utils.book_append_sheet(wb, ws3, '검색 조건');
+  return { wb, name: `문서검색_${(L.cq.replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 24))}_${stamp(L.at)}.xlsx` };
+}
+$('#xls').onclick = async () => {
+  try { const { wb, name } = await buildXlsx(); XLSX.writeFile(wb, name); toast('다운로드 폴더에 저장했습니다'); }
+  catch (e){ toast(e.message, 4000); }
+};
+$('#share').onclick = async () => {
+  try {
+    const { wb, name } = await buildXlsx();
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const f = new File([buf], name, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) await navigator.share({ files: [f], title: name });
+    else { XLSX.writeFile(wb, name); toast('공유를 지원하지 않아 파일로 저장했습니다'); }
+  } catch (e){ if (e.name !== 'AbortError') toast(e.message, 4000); }
+};
+
+// ── 색인 목록 / 설정 ─────────────────────────────────
+async function renderLib(){
+  $('#stDocs').textContent = S.docs.size; $('#stChunks').textContent = S.chunks.length;
+  $('#empty0') && ($('#empty0').textContent = S.docs.size ? `문서 ${S.docs.size}개 · 조각 ${S.chunks.length}개가 준비되어 있습니다. 찾고 싶은 내용을 문장으로 적어 보세요.` : '문서를 추가하면 여기서 문장 단위로 찾아 드립니다.');
+  const docs = [...S.docs.values()].sort((a, b) => b.addedAt - a.addedAt);
+  $('#docList').innerHTML = docs.length ? docs.map(d => `<div class="doc"><div class="nm"><b>${esc(d.name)}</b><span><span class="badge ${d.source === 'drive' ? 'd' : ''}">${d.source === 'drive' ? '드라이브' : '휴대폰'}</span> ${d.chunks}조각${d.ocr ? ' · OCR' : ''}</span></div><button class="x" data-del="${esc(d.id)}" aria-label="삭제">✕</button></div>`).join('')
+    : '<div class="empty">아직 색인된 문서가 없습니다.</div>';
+  try {
+    const e = await navigator.storage.estimate();
+    $('#stMb').textContent = (e.usage / 1048576).toFixed(0) + 'MB';
+    $('#stoInfo').textContent = `사용 ${(e.usage / 1048576).toFixed(0)}MB / 가능 ${(e.quota / 1073741824).toFixed(1)}GB (모델·OCR 데이터 포함)`;
+    const p = navigator.storage.persisted && await navigator.storage.persisted();
+    if (p){ $('#persist').textContent = '고정됨 ✓'; $('#persist').disabled = true; }
+  } catch (e){ $('#stoInfo').textContent = '저장 공간 정보를 볼 수 없습니다'; }
+}
+$('#docList').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const d = S.docs.get(b.dataset.del); if (!d || !confirm(`'${d.name}' 색인을 지울까요?`)) return;
+  await removeDoc(d.id); renderLib(); toast('삭제했습니다');
+});
+$('#wipe').onclick = async () => {
+  if (!S.docs.size || !confirm('색인한 문서를 모두 지울까요? (원본 파일은 그대로입니다)')) return;
+  const t = DB.db.transaction(['docs', 'chunks'], 'readwrite'); t.objectStore('docs').clear(); t.objectStore('chunks').clear(); await txDone(t);
+  S.docs.clear(); S.chunks = []; renderLib(); toast('색인을 모두 지웠습니다');
+};
+$('#persist').onclick = async () => { const ok = navigator.storage && navigator.storage.persist && await navigator.storage.persist(); toast(ok ? '저장 공간을 고정했습니다' : '브라우저가 고정을 허락하지 않았습니다 (홈 화면에 추가하면 허락되는 경우가 많습니다)', 4000); renderLib(); };
+
+$('#device').value = CFG.device;
+$('#device').onchange = () => { CFG.device = $('#device').value; saveCfg(); if (W.w){ W.w.terminate(); W.w = null; W.ready = null; W.files = {}; } setPill('모델 다시 불러와야 함'); };
+$('#loadModel').onclick = async () => { $('#loadModel').disabled = true; try { await initModel(); toast('모델 준비 완료 — 이제 인터넷 없이 분석합니다'); } catch (e){ toast(e.message, 5000); } $('#loadModel').disabled = false; };
+$('#ocr').checked = CFG.ocr; $('#ocr').onchange = () => { CFG.ocr = $('#ocr').checked; saveCfg(); if (G.stack.length) gRender(); };
+$('#ocrLang').value = CFG.ocrLang; $('#ocrLang').onchange = () => { CFG.ocrLang = $('#ocrLang').value; saveCfg(); };
+$('#ocrPre').onclick = async () => {
+  const b = $('#ocrPre'); b.disabled = true; b.innerHTML = '<span class="spin"></span>받는 중';
+  try { const c = document.createElement('canvas'); c.width = c.height = 32; await ocr(c); toast('OCR 데이터 준비 완료'); }
+  catch (e){ toast('OCR 준비 실패: ' + e.message, 4000); }
+  b.disabled = false; b.textContent = 'OCR 데이터 미리 받기 (약 15MB)';
+};
+$('#origin').textContent = location.origin;
+$('#copyOrigin').onclick = async () => { try { await navigator.clipboard.writeText(location.origin); toast('주소를 복사했습니다'); } catch (e){ toast(location.origin, 4000); } };
+$('#goGuide').onclick = () => { document.querySelector('.dock button[data-tab="set"]').click(); $('#gGuide').open = true; setTimeout(() => $('#gGuide').scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); };
+$('#cid').value = CFG.clientId;
+function updDrive(){ const has = !!CFG.clientId; $('#dNoId').classList.toggle('hide', has); if (!has){ $('#dConnect').classList.add('hide'); $('#dBrowser').classList.add('hide'); } else if ($('#dBrowser').classList.contains('hide')) $('#dConnect').classList.remove('hide'); }
+$('#cidSave').onclick = () => { CFG.clientId = $('#cid').value.trim(); saveCfg(); G.token = null; updDrive(); toast(CFG.clientId ? '저장했습니다 — 자료 추가 탭에서 연결하세요' : '클라이언트 ID를 지웠습니다'); };
+
+document.querySelectorAll('.dock button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.dock button').forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + b.dataset.tab));
+  if (b.dataset.tab === 'lib' || b.dataset.tab === 'set') renderLib();
+  window.scrollTo(0, 0);
+});
+
+// ── 시작 ─────────────────────────────────────────────
+(async () => {
+  updDrive();
+  try { await idbOpen(); await loadAll(); }
+  catch (e){ toast('저장소를 열 수 없습니다: ' + e.message, 5000); }
+  renderLib();
+  let cached = false;
+  try { const c = await caches.open('transformers-cache'); cached = (await c.keys()).some(r => r.url.includes('multilingual-e5-small')); } catch (e) {}
+  if (cached){ setPill('모델 저장됨'); if (S.chunks.length) initModel().catch(() => {}); }
+  else setPill('모델 미설치');
+})();
+</script>
+</body>
+</html>
