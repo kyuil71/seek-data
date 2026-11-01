@@ -143,13 +143,16 @@ code{font-size:15px;background:var(--bg);padding:1px 5px;border-radius:5px;word-
   <section class="tab" id="tab-add">
     <div class="card">
       <h2>휴대폰 문서</h2>
-      <p>고른 폴더·파일만 읽습니다. PDF, Word(.docx), TXT·MD·CSV, 이미지(문자 인식 켰을 때).</p>
+      <p>고른 폴더·파일만 읽습니다. PDF, Word(.docx), PowerPoint(.pptx), TXT·MD·CSV, 이미지(문자 인식 켰을 때).</p>
       <div class="row">
         <button id="pickDir">폴더 선택</button>
         <button class="ghost" id="pickFiles">파일 선택</button>
       </div>
       <input type="file" id="inDir" webkitdirectory directory multiple class="hide">
-      <input type="file" id="inFiles" multiple accept=".pdf,.docx,.txt,.md,.csv,image/*,application/pdf" class="hide">
+      <input type="file" id="inFiles" multiple accept=".pdf,.docx,.pptx,.txt,.md,.csv,image/*,application/pdf" class="hide">
+      <details style="margin-top:8px"><summary>Samsung Notes 노트 넣는 법</summary>
+        <p>노트 목록에서 길게 눌러 여러 개 선택 → <b>파일로 저장</b> → PDF·Word·PowerPoint 중 선택 → 저장된 폴더(보통 Documents › Samsung Notes)를 위 ‘폴더 선택’으로 고르세요. 손글씨는 노트 앱에서 먼저 텍스트로 변환하면 더 정확합니다.</p>
+      </details>
       <div class="toggle" style="margin-top:10px"><div>문자 인식(OCR)<br><span style="color:var(--mute)">스캔 PDF·사진 속 글자 읽기 · 느림</span></div><input type="checkbox" id="ocr"></div>
     </div>
 
@@ -293,19 +296,25 @@ const PURE = (() => {
   // segs: [{loc, text}] → [{loc, text}] 280~480자 조각, 한 문장 겹침
   function makeChunks(segs){
     const s = [];
-    for (const g of segs) for (const u of toUnits(g.text)) s.push({ loc: g.loc, t: u });
+    for (const g of segs){
+      const us = g.lines
+        ? String(g.text).split('\n').map(x => x.replace(/\s+/g, ' ').trim()).filter(x => x.replace(/[\s\d.\-–·•]/g, '').length > 1).flatMap(u => u.length > 420 ? chop(u, 300) : [u])
+        : toUnits(g.text);
+      for (const u of us) s.push({ loc: g.loc, t: u, hard: !!g.lines });
+    }
     const out = []; let i = 0;
     while (i < s.length){
-      let j = i, len = 0;
+      let j = i, len = 0, wall = false;
       while (j < s.length){
         const L = s[j].t.length;
+        if (j > i && (s[j].hard || s[j - 1].hard) && s[j].loc !== s[j - 1].loc){ wall = true; break; }
         if (j > i && (len >= 280 || len + L > 480)) break;
         len += L + 1; j++;
       }
       const part = s.slice(i, j);
-      out.push({ loc: locRange(part[0].loc, part[part.length - 1].loc), text: part.map(x => x.t).join(' ') });
+      out.push({ loc: locRange(part[0].loc, part[part.length - 1].loc), text: part.map(x => x.t).join('\n') });
       if (j >= s.length) break;
-      i = (j - i > 1) ? j - 1 : j;
+      i = (!wall && j - i > 1) ? j - 1 : j;
     }
     return out;
   }
@@ -355,7 +364,9 @@ const PURE = (() => {
     return h.replace(new RegExp('(' + ks.join('|') + ')', 'gi'), '<mark>$1</mark>');
   }
   function pickSentences(text){
-    const ss = toUnits(text);
+    const ss = text.includes('\n')
+      ? text.split('\n').map(x => x.trim()).filter(Boolean).flatMap(splitSent)
+      : toUnits(text);
     return ss.length ? ss : [text];
   }
   return { splitSent, toUnits, makeChunks, paraSegs, cleanQuery, keywords, kwScore, dot, esc, highlight, pickSentences, locRange };
@@ -374,6 +385,7 @@ const CDN = {
   cmaps: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
   fonts: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
   mammoth: 'https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js',
+  jszip: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
   xlsx: 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
   tess: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
   gis: 'https://accounts.google.com/gsi/client',
@@ -543,6 +555,71 @@ async function pdfSegs(buf, step){
   if (!segs.length && empty) throw new Error('글자가 없는 스캔 PDF입니다 — 문자 인식(OCR)을 켜고 다시 추가하세요');
   return segs;
 }
+// PowerPoint(.pptx): 발표 순서대로 슬라이드 글자 + 발표자 노트
+const NS_A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+const NS_R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+async function pptxSegs(buf, step){
+  await loadScript(CDN.jszip);
+  let zip;
+  try { zip = await JSZip.loadAsync(buf); } catch (e){ throw new Error('PowerPoint 파일을 열 수 없습니다 (.ppt 옛 형식은 .pptx로 다시 저장해 주세요)'); }
+  const rd = async p => { const f = zip.file(p); return f ? f.async('string') : null; };
+  const xml = s => new DOMParser().parseFromString(s, 'application/xml');
+  const resolve = (base, t) => {
+    if (t.startsWith('/')) return t.slice(1);
+    const parts = base.split('/'); parts.pop();
+    for (const seg of t.split('/')){ if (seg === '..') parts.pop(); else if (seg !== '.') parts.push(seg); }
+    return parts.join('/');
+  };
+  const rels = async (path) => {
+    const dir = path.split('/'); const file = dir.pop();
+    const s = await rd(`${dir.join('/')}/_rels/${file}.rels`); const m = {};
+    if (s) for (const r of xml(s).getElementsByTagName('Relationship')) m[r.getAttribute('Id')] = { t: r.getAttribute('Target'), type: r.getAttribute('Type') || '' };
+    return m;
+  };
+  const ptext = p => [...p.getElementsByTagNameNS(NS_A, 't')].map(t => t.textContent).join('').trim();
+  // 문단은 한 줄씩, 표는 행 단위로 '칸 | 칸'으로 묶는다
+  const paras = (doc) => {
+    const out = [], rows = new Set();
+    for (const p of doc.getElementsByTagNameNS(NS_A, 'p')){
+      let tr = p.parentNode;
+      while (tr && !(tr.localName === 'tr' && tr.namespaceURI === NS_A)) tr = tr.parentNode;
+      if (tr){
+        if (rows.has(tr)) continue; rows.add(tr);
+        const cells = [...tr.childNodes].filter(c => c.localName === 'tc')
+          .map(tc => [...tc.getElementsByTagNameNS(NS_A, 'p')].map(ptext).filter(Boolean).join(' '));
+        const line = cells.filter(Boolean).join(' | ');
+        if (line) out.push(line);
+      } else { const t = ptext(p); if (t) out.push(t); }
+    }
+    return out;
+  };
+  let order = [];
+  try {
+    const pres = xml(await rd('ppt/presentation.xml')), pr = await rels('ppt/presentation.xml');
+    for (const s of pres.getElementsByTagNameNS('*', 'sldId')){
+      const id = s.getAttributeNS(NS_R, 'id') || s.getAttribute('r:id');
+      if (pr[id]) order.push(resolve('ppt/presentation.xml', pr[id].t));
+    }
+  } catch (e){}
+  if (!order.length) order = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))
+    .sort((a, b) => +a.match(/(\d+)\.xml$/)[1] - +b.match(/(\d+)\.xml$/)[1]);
+  const segs = [];
+  for (let i = 0; i < order.length; i++){
+    if (RUN.cancel) throw new Error('중단됨');
+    step(`슬라이드 ${i + 1} / ${order.length} 읽는 중`, (i + 1) / order.length * 40);
+    const s = await rd(order[i]); if (!s) continue;
+    const lines = paras(xml(s));
+    const r = await rels(order[i]);
+    const nr = Object.values(r).find(x => /\/notesSlide$/.test(x.type));
+    if (nr){
+      const ns = await rd(resolve(order[i], nr.t));
+      if (ns){ const nl = paras(xml(ns)).filter(x => !/^\d+$/.test(x)); if (nl.length) lines.push(...nl.map(x => '[노트] ' + x)); }
+    }
+    if (lines.length) segs.push({ loc: `슬라이드 ${i + 1}`, text: lines.join('\n'), lines: true });
+  }
+  if (!segs.length) throw new Error('슬라이드에 글자가 없습니다 (이미지로만 된 슬라이드는 PDF로 내보낸 뒤 OCR로 읽어 주세요)');
+  return segs;
+}
 async function extract(it, step){
   if (it.kind === 'text'){ step('텍스트 읽는 중', 20); return paraSegs(await it.getText()); }
   if (it.kind === 'docx'){
@@ -551,6 +628,7 @@ async function extract(it, step){
     return paraSegs(r.value);
   }
   if (it.kind === 'pdf'){ step('PDF 여는 중', 5); return pdfSegs(await it.getBuffer(), step); }
+  if (it.kind === 'pptx'){ step('PowerPoint 여는 중', 5); return pptxSegs(await it.getBuffer(), step); }
   if (it.kind === 'image'){
     if (!CFG.ocr) throw new Error('이미지는 문자 인식(OCR)을 켜야 읽을 수 있습니다');
     step('이미지 문자 인식 중', 20);
@@ -562,6 +640,7 @@ function kindOf(name, mime = ''){
   const e = (name.split('.').pop() || '').toLowerCase();
   if (e === 'pdf' || mime === 'application/pdf') return 'pdf';
   if (e === 'docx') return 'docx';
+  if (e === 'pptx' || mime === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') return 'pptx';
   if (['txt', 'md', 'csv', 'tsv', 'json'].includes(e) || mime.startsWith('text/')) return 'text';
   if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'heic'].includes(e) || mime.startsWith('image/')) return 'image';
   return null;
@@ -660,7 +739,7 @@ if (!('webkitdirectory' in document.createElement('input'))) $('#pickDir').oncli
 // ── 구글 드라이브 ─────────────────────────────────────
 const G = {
   token: null, exp: 0, tc: null, stack: [], items: [], sel: new Set(),
-  M: { folder: 'application/vnd.google-apps.folder', gdoc: 'application/vnd.google-apps.document', gslide: 'application/vnd.google-apps.presentation', gsheet: 'application/vnd.google-apps.spreadsheet', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+  M: { folder: 'application/vnd.google-apps.folder', gdoc: 'application/vnd.google-apps.document', gslide: 'application/vnd.google-apps.presentation', gsheet: 'application/vnd.google-apps.spreadsheet', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }
 };
 const API = 'https://www.googleapis.com/drive/v3/files';
 function gAuth(interactive = true){
@@ -693,6 +772,7 @@ function gKind(f){
   if (m === G.M.folder) return 'folder';
   if (m === 'application/pdf') return 'pdf';
   if (m === G.M.docx) return 'docx';
+  if (m === G.M.pptx) return 'pptx';
   if (m === G.M.gdoc || m === G.M.gslide) return 'gtext';
   if (m === G.M.gsheet) return 'gcsv';
   if (m.startsWith('text/')) return 'text';
@@ -702,7 +782,7 @@ function gKind(f){
 function gItem(f, path){
   const k = gKind(f), u = `${API}/${f.id}`, base = 'drive:' + f.id;
   const it = { key: `${base}:${f.modifiedTime || ''}`, base, name: f.name, path, source: 'drive', link: f.webViewLink || '', size: +f.size || 0, mtime: f.modifiedTime || '' };
-  if (k === 'pdf' || k === 'docx'){ it.kind = k; it.getBuffer = () => gfetch(u + '?alt=media&supportsAllDrives=true', 'buf'); }
+  if (k === 'pdf' || k === 'docx' || k === 'pptx'){ it.kind = k; it.getBuffer = () => gfetch(u + '?alt=media&supportsAllDrives=true', 'buf'); }
   else if (k === 'gtext'){ it.kind = 'text'; it.getText = () => gfetch(u + '/export?mimeType=text/plain', 'text'); }
   else if (k === 'gcsv'){ it.kind = 'text'; it.getText = () => gfetch(u + '/export?mimeType=text/csv', 'text'); }
   else if (k === 'text'){ it.kind = 'text'; it.getText = () => gfetch(u + '?alt=media&supportsAllDrives=true', 'text'); }
@@ -738,7 +818,7 @@ async function gRender(){
     if (k === 'folder') return `<div class="fi folder" data-f="${i}"><span class="ico">▸</span><span class="n">${esc(f.name)}</span></div>`;
     const ok = k && (k !== 'image' || CFG.ocr);
     const done = S.docs.has(`drive:${f.id}:${f.modifiedTime || ''}`);
-    const tag = { pdf: 'PDF', docx: 'DOC', gtext: f.mimeType === G.M.gslide ? 'PPT' : 'DOC', gcsv: 'XLS', text: 'TXT', image: 'IMG' }[k] || '–';
+    const tag = { pdf: 'PDF', docx: 'DOC', pptx: 'PPT', gtext: f.mimeType === G.M.gslide ? 'PPT' : 'DOC', gcsv: 'XLS', text: 'TXT', image: 'IMG' }[k] || '–';
     return `<label class="fi ${ok ? '' : 'off'}"><span class="ico">${tag}</span><span class="n">${esc(f.name)}${done ? ' <span class="badge">색인됨</span>' : ''}</span>${ok ? `<input type="checkbox" data-s="${i}">` : ''}</label>`;
   }).join('');
 }
